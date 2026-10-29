@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+ name: mystate
+ namespace: default
+spec:
+ replicas: 3
+ updateStrategy:
+   type: RollingUpdate
+   rollingUpdate:
+    partition: 1
+ selector:
+  matchLabels: 
+   env: dev
+ template:
+   metadata:
+    labels:
+     env: dev
+   spec:
+    serviceAccountName: mysvaccount
+    containers:
+     - name: myapp
+       image: abdelrahmanshipl333/alaa
+       resources:
+        requests:
+          memory: "128Mi"
+          cpu: "100m"
+        limits:
+         memory: "256Mi"
+         cpu: "500m"
+       startupProbe:
+        tcpSocket:
+         port: 80
+        failureThreshold: 15
+        periodSeconds: 3
+       livenessProbe:
+        tcpSocket:
+         port: 80
+        initialDelaySeconds: 15
+        periodSeconds: 3
+       readinessProbe:
+        tcpSocket:
+         port: 80
+        initialDelaySeconds: 15
+        periodSeconds: 3
+       ports:
+        - containerPort: 80
+
+     - name: mydb
+       image:  postgres
+       resources:
+        requests:
+          memory: "128Mi"
+          cpu: "100m"
+        limits:
+         memory: "256Mi"
+         cpu: "500m"
+       startupProbe:
+        tcpSocket:
+         port: 5432
+        failureThreshold: 15
+        periodSeconds: 3
+       livenessProbe:
+        tcpSocket:
+         port: 5432
+        initialDelaySeconds: 15
+        periodSeconds: 3
+       readinessProbe:
+        tcpSocket:
+         port: 5432
+        initialDelaySeconds: 15
+        periodSeconds: 3
+        
+       
+        
+       ports:
+        - containerPort: 5432
+       env:
+        - name: POSTGRES_USER
+          valueFrom:
+           secretKeyRef:
+            name: mysecret
+            key: POSTGRES_USER
+        - name:  POSTGRES_PASSWORD
+          valueFrom:
+           secretKeyRef:
+            name: mysecret
+            key: POSTGRES_PASSWORD
+ volumeClaimTemplates:
+   - metadata:
+      name: myvolume
+     spec:
+      accessModes: ["ReadWriteMany"]
+      resources:
+       requests:
+        storage: 3Gi
